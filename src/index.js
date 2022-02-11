@@ -1,4 +1,5 @@
 import * as d3 from "d3";
+import { entry } from "../webpack.config";
 
 // Helper functions
 function range(size, startAt = 0) {
@@ -6,8 +7,8 @@ function range(size, startAt = 0) {
 }
 
 function exportDocuments(topics) {
-  let comm = new CommAPI("get_exported_documents", (ret) =>
-    alert(`Documents exported to python notebook ${ret}`)
+  let comm = new CommAPI("get_exported_documents", () =>
+    alert(`Documents exported to python notebook.`)
   );
 
   comm.call({ topic_names: topics });
@@ -27,7 +28,23 @@ export function render(div_id, data) {
   const topic_names = Object.keys(data);
 
   function slice_data(data) {
-    let sliced_data = data[selected_topics].slice(0, k);
+    const new_data = [];
+    // key = topic_name, value = arr of word counts
+    for (let [key, value] of Object.entries(data)) {
+      if (selected_topics.includes(key)) {
+        new_data.push(value);
+      }
+    }
+    const merged = [].concat
+      .apply([], new_data)
+      .reduce((acc, { word, count }) => {
+        acc[word] ??= { word: word, count: 0 };
+        acc[word].count += count;
+        return acc;
+      }, {});
+    const sliced_data = Object.values(merged)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, k);
     return sliced_data;
   }
 
@@ -77,8 +94,19 @@ export function render(div_id, data) {
     .property("selected", (d) => d === k);
 
   const onChangeTopic = () => {
-    const new_topics = d3.select("#topic-select").property("value");
-    updateTopics(new_topics);
+    const currentSelections = [];
+    let opt;
+    const opts = d3.select("#topic-select").property("options");
+    console.log(opts);
+    const len = opts.length;
+    for (let key in opts) {
+      opt = opts[key];
+      if (opt.selected) {
+        currentSelections.push(opt.value);
+      }
+    }
+
+    updateTopics(currentSelections);
   };
 
   function updateTopics(new_topics) {

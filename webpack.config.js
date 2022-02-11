@@ -14,6 +14,9 @@ module.exports = {
   },
   resolve: {
     extensions: ["*", ".js"],
+    fallback: {
+      "path": require.resolve("path-browserify")
+    }
   },
   output: {
     path: path.resolve(__dirname, "./dist"),
