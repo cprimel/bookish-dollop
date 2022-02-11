@@ -1,5 +1,5 @@
 import * as d3 from "d3";
-import { entry } from "../webpack.config";
+import { entry } from "../webpack.config"; // why is this here... code added it on the fly, maybe?
 
 // Helper functions
 function range(size, startAt = 0) {
@@ -14,6 +14,7 @@ function exportDocuments(topics) {
   comm.call({ topic_names: topics });
 }
 
+// Main render function called from notebook
 export function render(div_id, data) {
   // Style properties
   const size = { width: 600, height: 600 };
@@ -27,6 +28,7 @@ export function render(div_id, data) {
   let selected_topics = ["all"];
   const topic_names = Object.keys(data);
 
+  // Updates data based on selections
   function slice_data(data) {
     const new_data = [];
     // key = topic_name, value = arr of word counts
@@ -49,19 +51,21 @@ export function render(div_id, data) {
   }
 
   const sliced_data = slice_data(data);
-
   let x = (d) => d.count;
   let y = (d) => d.word;
   let X = d3.map(sliced_data, x);
   let Y = d3.map(sliced_data, y);
 
-  let I = d3.range(X.length);
+  let I = d3.range(X.length); // index for easier iteration of data arrays
 
   let div = d3.select(div_id);
 
-  // Selectors
-  const menu_div = div.append("div").style("float", "left");
+  // Selection menus
+  // TODO: not showing up in notebook with correct alginment
+  const menu_div = div.append("div").style("float", "left"); // give them their own div
 
+  // k-value selection
+  // Selection handlers
   const onChangeK = () => {
     const new_k = d3.select("#k-select").property("value");
     update_k(new_k);
@@ -93,6 +97,8 @@ export function render(div_id, data) {
     .text((d) => d)
     .property("selected", (d) => d === k);
 
+  // Topics selection
+  // Selection handlers
   const onChangeTopic = () => {
     const currentSelections = [];
     let opt;
@@ -135,6 +141,7 @@ export function render(div_id, data) {
     .text((d) => d)
     .property("selected", (d) => d === selected_topics);
 
+  // Export button
   let exportButton = menu_div
     .append("button")
     .text("Export")
@@ -142,13 +149,14 @@ export function render(div_id, data) {
       exportDocuments(selected_topics);
     });
 
+  // Main SVG
   let svg = div
     .append("svg")
     .attr("width", size.width)
     .attr("height", size.height)
     .style("float", "left");
-  // Scales
 
+  // Scales
   let xDomain = [0, d3.max(X)];
   let xRange = [margin.left, size.width - margin.right];
   const xScale = d3.scaleLinear(xDomain, xRange);
@@ -167,11 +175,11 @@ export function render(div_id, data) {
       .call(d3.axisLeft(yScale))
       .style("font-size", "12px");
 
+  // Assign to variable for easier callback on update
   const xAxisUpdater = svg.append("g").call(xAxis);
   const yAxisUpdater = svg.append("g").call(yAxis);
 
-  // Title
-
+  // Add title
   svg
     .append("text")
     .attr("class", "title")
@@ -180,8 +188,8 @@ export function render(div_id, data) {
     .attr("text-anchor", "middle")
     .text(`Top ${k} words in newsgroup:${selected_topics}`);
 
-  // Join data
 
+  // Dynamic updating of chart based on data + user selections
   const updateChart = (new_data) => {
     svg
       .selectAll("text.title")
@@ -214,6 +222,8 @@ export function render(div_id, data) {
         (exit) => exit.remove()
       );
   };
+
+  // Initial render
   updateChart(sliced_data);
   return svg.node();
 }
